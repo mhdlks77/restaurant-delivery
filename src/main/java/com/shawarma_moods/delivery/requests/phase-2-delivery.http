@@ -1,0 +1,36 @@
+### Get a delivery quote
+GET http://localhost:8080/api/test/quote?dropoffAddress=3590 Boul Notre dame, Laval, QC H7V 3Z7
+Accept: application/json
+
+###
+
+### Create a sandbox delivery
+POST http://localhost:8080/api/test/delivery
+Content-Type: application/json
+
+{
+  "woocommerceOrderId": "TEST-001",
+  "customerName": "John Doe",
+  "customerAddress": "3590 Boul Notre dame, Laval, QC, H7V 3Z7",
+  "customerPhone": "+15141234567",
+  "orderValueCents": "2500"
+}
+
+###
+
+### Test idempotency — same order ID, should throw
+POST http://localhost:8080/api/test/delivery
+Content-Type: application/json
+
+{
+  "woocommerceOrderId": "TEST-001",
+  "customerName": "John Doe",
+  "customerAddress": "456 Test St, Montreal, QC H2X 1Y6",
+  "customerPhone": "+15141234567",
+  "orderValueCents": "2500"
+}
+
+###
+
+### Health check
+GET http://localhost:8080/api/health

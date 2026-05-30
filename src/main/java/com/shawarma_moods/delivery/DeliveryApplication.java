@@ -1,12 +1,13 @@
 package com.shawarma_moods.delivery;
 
+import com.shawarma_moods.delivery.config.RestaurantProperties;
 import com.shawarma_moods.delivery.config.UberProperties;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 
 @SpringBootApplication
-@EnableConfigurationProperties(UberProperties.class)
+@EnableConfigurationProperties({UberProperties.class, RestaurantProperties.class})
 public class DeliveryApplication {
 
 	public static void main(String[] args) {
