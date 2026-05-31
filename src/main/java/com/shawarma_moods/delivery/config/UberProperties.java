@@ -11,6 +11,7 @@ public class UberProperties {
     private String clientSecret;
     private String customerId;
     private String baseUrl;
+    private String webhookSecret;
 
     //Getters and setters
 
@@ -41,5 +42,12 @@ public class UberProperties {
     }
     public void setBaseUrl(String baseUrl) {
         this.baseUrl = baseUrl;
+    }
+
+    public String getWebhookSecret() {
+        return webhookSecret;
+    }
+    public void setWebhookSecret(String webhookSecret) {
+        this.webhookSecret = webhookSecret;
     }
 }

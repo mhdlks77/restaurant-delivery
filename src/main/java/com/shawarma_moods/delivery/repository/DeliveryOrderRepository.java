@@ -11,6 +11,6 @@ import java.util.Optional;
 public interface DeliveryOrderRepository extends JpaRepository<DeliveryOrder, Long> {
 
     Optional<DeliveryOrder> findByWoocommerceOrderId(String woocommerceOrderId);
-    Optional<DeliveryStatus> findByUberDeliveryId(String uberDeliveryId);
+    Optional<DeliveryOrder> findByUberDeliveryId(String uberDeliveryId);
 
 }

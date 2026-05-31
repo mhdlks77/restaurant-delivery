@@ -1,0 +1,65 @@
+### Simulate a delivery.created webhook (local testing)
+POST http://localhost:8080/webhooks/uber
+Content-Type: application/json
+X-Postmates-Signature: test-bypass
+
+{
+  "event_type": "delivery.created",
+  "event_id": "evt_001",
+  "created": 1234567890,
+  "meta": {
+    "resource_id": "del_sj2VMgUFSY6ivDjzZepFVQ",
+    "status": "created"
+  }
+}
+
+###
+
+### Simulate a delivery.pickup webhook
+POST http://localhost:8080/webhooks/uber
+Content-Type: application/json
+X-Postmates-Signature: test-bypass
+
+{
+  "event_type": "delivery.pickup",
+  "event_id": "evt_002",
+  "created": 1234567890,
+  "meta": {
+    "resource_id": "del_sj2VMgUFSY6ivDjzZepFVQ",
+    "status": "pickup"
+  }
+}
+
+###
+
+### Simulate a delivery.delivered webhook
+POST http://localhost:8080/webhooks/uber
+Content-Type: application/json
+X-Postmates-Signature: test-bypass
+
+{
+  "event_type": "delivery.delivered",
+  "event_id": "evt_003",
+  "created": 1234567890,
+  "meta": {
+    "resource_id": "del_sj2VMgUFSY6ivDjzZepFVQ",
+    "status": "delivered"
+  }
+}
+
+###
+
+### Simulate a delivery.failed webhook
+POST http://localhost:8080/webhooks/uber
+Content-Type: application/json
+X-Postmates-Signature: test-bypass
+
+{
+  "event_type": "delivery.failed",
+  "event_id": "evt_004",
+  "created": 1234567890,
+  "meta": {
+    "resource_id": "del_sj2VMgUFSY6ivDjzZepFVQ",
+    "status": "failed"
+  }
+}
