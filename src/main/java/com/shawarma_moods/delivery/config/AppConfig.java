@@ -21,9 +21,7 @@ public class AppConfig {
             @Value("${spring.datasource.password}") String password
     ) {
         return args -> {
-            System.out.println(">>> DB URL: " + url);
-            System.out.println(">>> DB USER: " + username);
-            System.out.println(">>> DB PASS: " + password);
+            System.out.println("RESTO DELIVERY SERVICE");
         };
     }
 }
