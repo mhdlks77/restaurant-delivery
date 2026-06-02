@@ -6,6 +6,8 @@ import com.shawarma_moods.delivery.model.PickupOrder;
 import com.shawarma_moods.delivery.model.PickupStatus;
 import com.shawarma_moods.delivery.repository.DeliveryOrderRepository;
 import com.shawarma_moods.delivery.repository.PickupOrderRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,6 +18,8 @@ import java.util.stream.Stream;
 @RestController
 @RequestMapping("/api/dashboard")
 public class DashboardController {
+
+    private static final Logger log = LoggerFactory.getLogger(DashboardController.class);
 
     private final PickupOrderRepository pickupOrderRepository;
     private final DeliveryOrderRepository deliveryOrderRepository;
@@ -80,20 +84,29 @@ public class DashboardController {
      */
     @PostMapping("/orders/{orderId}/ready")
     public ResponseEntity<Void> markReady(@PathVariable String orderId) {
-        if (orderId.startsWith("P-")) {
-            Long id = Long.parseLong(orderId.substring(2));
-            pickupOrderRepository.findById(id).ifPresent(order -> {
-                order.setStatus(PickupStatus.READY);
-                pickupOrderRepository.save(order);
-            });
-        } else if (orderId.startsWith("D-")) {
-            Long id = Long.parseLong(orderId.substring(2));
-            deliveryOrderRepository.findById(id).ifPresent(order -> {
-                order.setStatus(DeliveryStatus.READY_FOR_PICKUP);
-                deliveryOrderRepository.save(order);
-            });
+        try {
+            if (orderId.startsWith("P-")) {
+                Long id = Long.parseLong(orderId.substring(2));
+                pickupOrderRepository.findById(id).ifPresentOrElse(order -> {
+                    log.info("Marking pickup order {} as READY", orderId);
+                    order.setStatus(PickupStatus.READY);
+                    pickupOrderRepository.save(order);
+                }, () -> log.warn("Pickup order {} not found", orderId));
+            } else if (orderId.startsWith("D-")) {
+                Long id = Long.parseLong(orderId.substring(2));
+                deliveryOrderRepository.findById(id).ifPresentOrElse(order -> {
+                    log.info("Marking delivery order {} as READY_FOR_PICKUP (current status: {})", orderId, order.getStatus());
+                    order.setStatus(DeliveryStatus.READY_FOR_PICKUP);
+                    deliveryOrderRepository.save(order);
+                }, () -> log.warn("Delivery order {} not found", orderId));
+            } else {
+                log.warn("markReady called with unrecognised orderId format: {}", orderId);
+            }
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            log.error("Failed to mark order {} as ready: {}", orderId, e.getMessage(), e);
+            return ResponseEntity.internalServerError().build();
         }
-        return ResponseEntity.ok().build();
     }
 
 
