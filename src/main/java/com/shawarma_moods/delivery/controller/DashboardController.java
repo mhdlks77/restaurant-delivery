@@ -73,5 +73,28 @@ public class DashboardController {
         return ResponseEntity.ok().build();
     }
 
+    /**
+     * Marks an order as ready.
+     * Pickup → READY (customer can come collect)
+     * Delivery → READY_FOR_PICKUP (waiting for Uber driver)
+     */
+    @PostMapping("/orders/{orderId}/ready")
+    public ResponseEntity<Void> markReady(@PathVariable String orderId) {
+        if (orderId.startsWith("P-")) {
+            Long id = Long.parseLong(orderId.substring(2));
+            pickupOrderRepository.findById(id).ifPresent(order -> {
+                order.setStatus(PickupStatus.READY);
+                pickupOrderRepository.save(order);
+            });
+        } else if (orderId.startsWith("D-")) {
+            Long id = Long.parseLong(orderId.substring(2));
+            deliveryOrderRepository.findById(id).ifPresent(order -> {
+                order.setStatus(DeliveryStatus.READY_FOR_PICKUP);
+                deliveryOrderRepository.save(order);
+            });
+        }
+        return ResponseEntity.ok().build();
+    }
+
 
 }
