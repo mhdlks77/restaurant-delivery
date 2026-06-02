@@ -34,6 +34,9 @@ public class PickupOrder {
     @Enumerated(EnumType.STRING)
     private PickupStatus status;
 
+    @Column(name = "estimated_ready_at")
+    private Instant estimatedReadyAt;
+
     @Column(name = "created_at")
     private Instant createdAt;
 
@@ -65,6 +68,8 @@ public class PickupOrder {
     public void setTotalCents(Integer v) { this.totalCents = v; }
     public PickupStatus getStatus() { return status; }
     public void setStatus(PickupStatus v) { this.status = v; }
+    public Instant getEstimatedReadyAt() { return estimatedReadyAt; }
+    public void setEstimatedReadyAt(Instant v) { this.estimatedReadyAt = v; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
 }

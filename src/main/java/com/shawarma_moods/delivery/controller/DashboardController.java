@@ -11,6 +11,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Stream;
@@ -65,7 +67,9 @@ public class DashboardController {
             Long id = Long.parseLong(orderId.substring(2));
             pickupOrderRepository.findById(id).ifPresent(order -> {
                 order.setStatus(PickupStatus.PREPARING);
+                order.setEstimatedReadyAt(Instant.now().plus(estimatedMinutes, ChronoUnit.MINUTES));
                 pickupOrderRepository.save(order);
+                log.info("Pickup order {} accepted — ready in {} min", orderId, estimatedMinutes);
             });
         } else if (orderId.startsWith("D-")) {
             Long id = Long.parseLong(orderId.substring(2));
@@ -109,5 +113,28 @@ public class DashboardController {
         }
     }
 
+    /**
+     * Marks a pickup order as COMPLETED (customer collected it).
+     * Only applicable to pickup orders — delivery completion is handled by Uber webhooks.
+     */
+    @PostMapping("/orders/{orderId}/pickedup")
+    public ResponseEntity<Void> markPickedUp(@PathVariable String orderId) {
+        try {
+            if (orderId.startsWith("P-")) {
+                Long id = Long.parseLong(orderId.substring(2));
+                pickupOrderRepository.findById(id).ifPresentOrElse(order -> {
+                    log.info("Marking pickup order {} as COMPLETED (picked up)", orderId);
+                    order.setStatus(PickupStatus.COMPLETED);
+                    pickupOrderRepository.save(order);
+                }, () -> log.warn("Pickup order {} not found", orderId));
+            } else {
+                log.warn("markPickedUp called on non-pickup order: {}", orderId);
+            }
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            log.error("Failed to mark order {} as picked up: {}", orderId, e.getMessage(), e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
 
 }
