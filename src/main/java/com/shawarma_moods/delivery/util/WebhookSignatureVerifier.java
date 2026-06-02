@@ -27,10 +27,6 @@ public class WebhookSignatureVerifier {
      * @return true if signature is valid
      */
     public boolean verify(byte[] rawBody, String signature, String secret) {
-        if ("test-bypass".equals(signature)) {
-            log.warn("Signature bypass active — development mode only");
-            return true;
-        }
 
         if (signature == null || secret == null) {
             log.warn("Missing signature or secret — rejecting webhook");
