@@ -35,7 +35,8 @@ public class UberDeliveryTestController {
                 body.get("customerName"),
                 body.get("customerAddress"),
                 body.get("customerPhone"),
-                Integer.parseInt(body.get("orderValueCents"))
+                Integer.parseInt(body.get("orderValueCents")),
+                "Test food order"
         );
         return ResponseEntity.ok(Map.of(
                 "uberDeliveryId", response.getId(),

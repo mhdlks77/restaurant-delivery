@@ -85,7 +85,8 @@ public class UberDeliveryService {
             String customerName,
             String customerAddress,
             String customerPhone,
-            Integer orderValueCents
+            Integer orderValueCents,
+            String manifestDescription
     ) {
         // Idempotency check - never create two deliveries for the same order
         deliveryOrderRepository.findByWoocommerceOrderId(woocommerceOrderId).ifPresent(existing -> {
@@ -115,7 +116,7 @@ public class UberDeliveryService {
         deliveryRequest.setManifestReference(woocommerceOrderId);
         deliveryRequest.setManifestItems(List.of(
                 new UberManifestItem(
-                        "Food order",   // name — Phase 4 will replace this with real WC line items
+                        manifestDescription,   // real WC line items
                         1,              // quantity
                         "medium",       // size
                         orderValueCents // price in cents
