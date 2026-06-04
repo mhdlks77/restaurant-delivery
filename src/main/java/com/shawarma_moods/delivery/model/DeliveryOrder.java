@@ -35,6 +35,15 @@ public class DeliveryOrder {
     @Enumerated(EnumType.STRING)
     private OrderType orderType;
 
+    @Column(name = "tracking_url")
+    private String trackingUrl;
+
+    @Column(name = "items_description", columnDefinition = "TEXT")
+    private String itemsDescription;
+
+    @Column(name = "total_cents")
+    private Integer totalCents;
+
     @Column(name = "created_at")
     private Instant createdAt;
 
@@ -103,6 +112,27 @@ public class DeliveryOrder {
     }
     public void setOrderType(OrderType orderType) {
         this.orderType = orderType;
+    }
+
+    public String getTrackingUrl() {
+        return trackingUrl;
+    }
+    public void setTrackingUrl(String trackingUrl) {
+        this.trackingUrl = trackingUrl;
+    }
+
+    public String getItemsDescription() {
+        return itemsDescription;
+    }
+    public void setItemsDescription(String itemsDescription) {
+        this.itemsDescription = itemsDescription;
+    }
+
+    public Integer getTotalCents() {
+        return totalCents;
+    }
+    public void setTotalCents(Integer totalCents) {
+        this.totalCents = totalCents;
     }
 
     public Instant getCreatedAt() {

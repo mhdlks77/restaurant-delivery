@@ -32,6 +32,8 @@ public class OrderSummaryResponse {
         r.customerName = o.getCustomerName();
         r.customerPhone = o.getCustomerPhone();
         r.customerAddress = o.getCustomerAddress();
+        r.itemsDescription = o.getItemsDescription();
+        r.totalCents = o.getTotalCents();
         r.createdAt = o.getCreatedAt();
         r.updatedAt = o.getUpdatedAt();
         return r;

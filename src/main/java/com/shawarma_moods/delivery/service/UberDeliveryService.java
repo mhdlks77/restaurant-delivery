@@ -135,7 +135,7 @@ public class UberDeliveryService {
                 log.info("Delivery created successfully: uberDeliveryId={}", deliveryResponse.getId());
 
                 //step 3 : persist to database
-                persistDelivery(woocommerceOrderId, customerName, customerAddress, customerPhone, deliveryResponse);
+                persistDelivery(woocommerceOrderId, customerName, customerAddress, customerPhone, orderValueCents, manifestDescription, deliveryResponse);
 
                 return deliveryResponse;
             }
@@ -154,6 +154,8 @@ public class UberDeliveryService {
             String customerName,
             String customerAddress,
             String customerPhone,
+            Integer totalCents,
+            String itemsDescription,
             UberDeliveryResponse deliveryResponse
     ) {
         DeliveryOrder order = new DeliveryOrder();
@@ -164,6 +166,9 @@ public class UberDeliveryService {
         order.setCustomerAddress(customerAddress);
         order.setCustomerPhone(customerPhone);
         order.setOrderType(OrderType.DELIVERY);
+        order.setTrackingUrl(deliveryResponse.getTrackingUrl());
+        order.setItemsDescription(itemsDescription);
+        order.setTotalCents(totalCents);
         deliveryOrderRepository.save(order);
         log.info("Delivery order persisted to DB for Woocommerce order {}", woocommerceOrderId);
     }
