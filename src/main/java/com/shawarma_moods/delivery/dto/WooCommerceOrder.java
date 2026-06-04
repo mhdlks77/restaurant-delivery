@@ -29,6 +29,12 @@ public class WooCommerceOrder {
     @JsonProperty("total")
     private String total;
 
+    @JsonProperty("total_tax")
+    private String totalTax;
+
+    @JsonProperty("shipping_total")
+    private String shippingTotal;
+
     // --- Nested classes ---
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -64,10 +70,12 @@ public class WooCommerceOrder {
         @JsonProperty("name")     private String name;
         @JsonProperty("quantity") private Integer quantity;
         @JsonProperty("price")    private String price;
+        @JsonProperty("total")    private String total; // row total after discounts
 
-        public String getName()     { return name; }
-        public Integer getQuantity(){ return quantity; }
-        public String getPrice()    { return price; }
+        public String getName()       { return name; }
+        public Integer getQuantity()  { return quantity; }
+        public String getPrice()      { return price; }
+        public String getRowTotal()   { return total; }
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -96,7 +104,7 @@ public class WooCommerceOrder {
 
     /**
      * Builds a human-readable manifest string from line items.
-     * Used as the Uber Direct manifest description.
+     * Used as the Uber Direct manifest description only.
      * Example: "2x Burger, 1x Fries, 3x Coke"
      */
     public String buildManifestDescription() {
@@ -111,15 +119,39 @@ public class WooCommerceOrder {
     }
 
     /**
-     * Converts total string to cents (integer).
-     * WooCommerce sends total as "25.00", Uber expects 2500.
+     * Builds a JSON array of line items with prices for dashboard receipt display.
+     * Format: [{"qty":2,"name":"Kafta Pita","rowCents":1798},...]
      */
-    public Integer getTotalCents() {
-        try {
-            return (int) (Double.parseDouble(total) * 100);
-        } catch (Exception e) {
-            return 0;
+    public String buildLineItemsJson() {
+        if (lineItems == null || lineItems.isEmpty()) return "[]";
+        StringBuilder sb = new StringBuilder("[");
+        for (int i = 0; i < lineItems.size(); i++) {
+            LineItem item = lineItems.get(i);
+            int rowCents = 0;
+            try { rowCents = (int) (Double.parseDouble(item.getRowTotal()) * 100); } catch (Exception ignored) {}
+            String safeName = item.getName() != null ? item.getName().replace("\\", "\\\\").replace("\"", "\\\"") : "";
+            sb.append("{\"qty\":").append(item.getQuantity())
+              .append(",\"name\":\"").append(safeName)
+              .append("\",\"rowCents\":").append(rowCents).append("}");
+            if (i < lineItems.size() - 1) sb.append(",");
         }
+        sb.append("]");
+        return sb.toString();
+    }
+
+    /** Converts total string (e.g. "25.00") to cents. */
+    public Integer getTotalCents() {
+        try { return (int) (Double.parseDouble(total) * 100); } catch (Exception e) { return 0; }
+    }
+
+    /** Converts total_tax string to cents. */
+    public Integer getTaxCents() {
+        try { return (int) (Double.parseDouble(totalTax) * 100); } catch (Exception e) { return 0; }
+    }
+
+    /** Converts shipping_total string to cents. */
+    public Integer getShippingCents() {
+        try { return (int) (Double.parseDouble(shippingTotal) * 100); } catch (Exception e) { return 0; }
     }
 
     public Long getId()                  { return id; }

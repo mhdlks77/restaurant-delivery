@@ -86,7 +86,10 @@ public class UberDeliveryService {
             String customerAddress,
             String customerPhone,
             Integer orderValueCents,
-            String manifestDescription
+            Integer taxCents,
+            Integer shippingCents,
+            String manifestDescription,
+            String itemsJson
     ) {
         // Idempotency check - never create two deliveries for the same order
         deliveryOrderRepository.findByWoocommerceOrderId(woocommerceOrderId).ifPresent(existing -> {
@@ -135,7 +138,7 @@ public class UberDeliveryService {
                 log.info("Delivery created successfully: uberDeliveryId={}", deliveryResponse.getId());
 
                 //step 3 : persist to database
-                persistDelivery(woocommerceOrderId, customerName, customerAddress, customerPhone, orderValueCents, manifestDescription, deliveryResponse);
+                persistDelivery(woocommerceOrderId, customerName, customerAddress, customerPhone, orderValueCents, taxCents, shippingCents, itemsJson, deliveryResponse);
 
                 return deliveryResponse;
             }
@@ -155,7 +158,9 @@ public class UberDeliveryService {
             String customerAddress,
             String customerPhone,
             Integer totalCents,
-            String itemsDescription,
+            Integer taxCents,
+            Integer shippingCents,
+            String itemsJson,
             UberDeliveryResponse deliveryResponse
     ) {
         DeliveryOrder order = new DeliveryOrder();
@@ -167,8 +172,10 @@ public class UberDeliveryService {
         order.setCustomerPhone(customerPhone);
         order.setOrderType(OrderType.DELIVERY);
         order.setTrackingUrl(deliveryResponse.getTrackingUrl());
-        order.setItemsDescription(itemsDescription);
+        order.setItemsDescription(itemsJson);
         order.setTotalCents(totalCents);
+        order.setTaxCents(taxCents);
+        order.setShippingCents(shippingCents);
         deliveryOrderRepository.save(order);
         log.info("Delivery order persisted to DB for Woocommerce order {}", woocommerceOrderId);
     }

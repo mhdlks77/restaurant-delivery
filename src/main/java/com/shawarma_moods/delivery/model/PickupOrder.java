@@ -24,11 +24,17 @@ public class PickupOrder {
     @Column(name = "customer_email")
     private String customerEmail;
 
-    @Column(name = "items_description", length = 1000)
+    @Column(name = "items_description", columnDefinition = "TEXT")
     private String itemsDescription;
 
     @Column(name = "total_cents")
     private Integer totalCents;
+
+    @Column(name = "tax_cents")
+    private Integer taxCents;
+
+    @Column(name = "shipping_cents")
+    private Integer shippingCents;
 
     @Column(name = "status")
     @Enumerated(EnumType.STRING)
@@ -66,6 +72,10 @@ public class PickupOrder {
     public void setItemsDescription(String v) { this.itemsDescription = v; }
     public Integer getTotalCents() { return totalCents; }
     public void setTotalCents(Integer v) { this.totalCents = v; }
+    public Integer getTaxCents() { return taxCents; }
+    public void setTaxCents(Integer v) { this.taxCents = v; }
+    public Integer getShippingCents() { return shippingCents; }
+    public void setShippingCents(Integer v) { this.shippingCents = v; }
     public PickupStatus getStatus() { return status; }
     public void setStatus(PickupStatus v) { this.status = v; }
     public Instant getEstimatedReadyAt() { return estimatedReadyAt; }

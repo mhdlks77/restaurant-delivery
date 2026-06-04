@@ -57,7 +57,10 @@ public class OrderRoutingService {
         String customerAddress = address.getFullAddress();
         String customerPhone   = billing.getPhone();
         String manifest        = order.buildManifestDescription();
+        String itemsJson       = order.buildLineItemsJson();
         Integer totalCents     = order.getTotalCents();
+        Integer taxCents       = order.getTaxCents();
+        Integer shippingCents  = order.getShippingCents();
 
         log.info("Creating Uber delivery for WC order {}: {} → {}",
                 wcOrderId, customerName, customerAddress);
@@ -68,7 +71,10 @@ public class OrderRoutingService {
                 customerAddress,
                 customerPhone,
                 totalCents,
-                manifest
+                taxCents,
+                shippingCents,
+                manifest,
+                itemsJson
         );
     }
 
@@ -86,8 +92,10 @@ public class OrderRoutingService {
         pickupOrder.setCustomerName(billing.getFullName());
         pickupOrder.setCustomerPhone(billing.getPhone());
         pickupOrder.setCustomerEmail(billing.getEmail());
-        pickupOrder.setItemsDescription(order.buildManifestDescription());
+        pickupOrder.setItemsDescription(order.buildLineItemsJson());
         pickupOrder.setTotalCents(order.getTotalCents());
+        pickupOrder.setTaxCents(order.getTaxCents());
+        pickupOrder.setShippingCents(order.getShippingCents());
 
         pickupOrderRepository.save(pickupOrder);
 

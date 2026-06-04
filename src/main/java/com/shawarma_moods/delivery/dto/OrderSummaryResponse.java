@@ -16,6 +16,8 @@ public class OrderSummaryResponse {
     private String customerEmail;
     private String itemsDescription;
     private Integer totalCents;
+    private Integer taxCents;
+    private Integer shippingCents;
     private Instant estimatedReadyAt; // only for pickup orders in PREPARING status
     private Instant createdAt;
     private Instant updatedAt;
@@ -34,6 +36,8 @@ public class OrderSummaryResponse {
         r.customerAddress = o.getCustomerAddress();
         r.itemsDescription = o.getItemsDescription();
         r.totalCents = o.getTotalCents();
+        r.taxCents = o.getTaxCents();
+        r.shippingCents = o.getShippingCents();
         r.createdAt = o.getCreatedAt();
         r.updatedAt = o.getUpdatedAt();
         return r;
@@ -50,6 +54,8 @@ public class OrderSummaryResponse {
         r.customerEmail = o.getCustomerEmail();
         r.itemsDescription = o.getItemsDescription();
         r.totalCents = o.getTotalCents();
+        r.taxCents = o.getTaxCents();
+        r.shippingCents = o.getShippingCents();
         r.estimatedReadyAt = o.getEstimatedReadyAt();
         r.createdAt = o.getCreatedAt();
         r.updatedAt = o.getUpdatedAt();
@@ -66,6 +72,8 @@ public class OrderSummaryResponse {
     public String getCustomerEmail()      { return customerEmail; }
     public String getItemsDescription()   { return itemsDescription; }
     public Integer getTotalCents()        { return totalCents; }
+    public Integer getTaxCents()          { return taxCents; }
+    public Integer getShippingCents()     { return shippingCents; }
     public Instant getEstimatedReadyAt()  { return estimatedReadyAt; }
     public Instant getCreatedAt()         { return createdAt; }
     public Instant getUpdatedAt()         { return updatedAt; }
