@@ -60,6 +60,7 @@ public class OrderStatusController {
         r.setStatus(order.getStatus().name());
         r.setTrackingUrl(order.getTrackingUrl());
         r.setStatusMessage(deliveryStatusMessage(order.getStatus()));
+        r.setEstimatedReadyAt(order.getEstimatedReadyAt());
         return r;
     }
 
@@ -69,6 +70,7 @@ public class OrderStatusController {
         r.setType("PICKUP");
         r.setStatus(order.getStatus().name());
         r.setStatusMessage(pickupStatusMessage(order.getStatus()));
+        r.setEstimatedReadyAt(order.getEstimatedReadyAt());
         return r;
     }
 
