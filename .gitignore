@@ -60,3 +60,6 @@ logs/
 
 # HTTP tests
 
+# Local DB migration log (tracked manually, not committed)
+schema-changes.sql
+
