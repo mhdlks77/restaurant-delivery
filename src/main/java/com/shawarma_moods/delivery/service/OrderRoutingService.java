@@ -3,7 +3,6 @@ package com.shawarma_moods.delivery.service;
 import com.shawarma_moods.delivery.dto.WooCommerceOrder;
 import com.shawarma_moods.delivery.model.PickupOrder;
 import com.shawarma_moods.delivery.repository.PickupOrderRepository;
-import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
