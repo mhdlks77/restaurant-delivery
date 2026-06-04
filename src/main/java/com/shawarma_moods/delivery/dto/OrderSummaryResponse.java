@@ -38,6 +38,7 @@ public class OrderSummaryResponse {
         r.totalCents = o.getTotalCents();
         r.taxCents = o.getTaxCents();
         r.shippingCents = o.getShippingCents();
+        r.estimatedReadyAt = o.getEstimatedReadyAt();
         r.createdAt = o.getCreatedAt();
         r.updatedAt = o.getUpdatedAt();
         return r;

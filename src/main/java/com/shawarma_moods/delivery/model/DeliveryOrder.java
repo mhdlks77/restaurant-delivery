@@ -38,6 +38,9 @@ public class DeliveryOrder {
     @Column(name = "tracking_url")
     private String trackingUrl;
 
+    @Column(name = "estimated_ready_at")
+    private Instant estimatedReadyAt;
+
     @Column(name = "items_description", columnDefinition = "TEXT")
     private String itemsDescription;
 
@@ -140,6 +143,9 @@ public class DeliveryOrder {
     public void setTotalCents(Integer totalCents) {
         this.totalCents = totalCents;
     }
+
+    public Instant getEstimatedReadyAt() { return estimatedReadyAt; }
+    public void setEstimatedReadyAt(Instant estimatedReadyAt) { this.estimatedReadyAt = estimatedReadyAt; }
 
     public Integer getTaxCents() { return taxCents; }
     public void setTaxCents(Integer taxCents) { this.taxCents = taxCents; }

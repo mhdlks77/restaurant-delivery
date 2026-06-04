@@ -38,9 +38,10 @@ public class UberWebhookService {
         }
 
         switch (eventType) {
-            case "delivery.created"  -> updateStatus(deliveryId, DeliveryStatus.CREATED);
-            case "delivery.pickup"   -> updateStatus(deliveryId, DeliveryStatus.PICKUP);
-            case "delivery.dropoff"  -> updateStatus(deliveryId, DeliveryStatus.DROPOFF);
+            case "delivery.created"         -> updateStatus(deliveryId, DeliveryStatus.CREATED);
+            case "delivery.pickup_imminent" -> updateStatus(deliveryId, DeliveryStatus.READY_FOR_PICKUP);
+            case "delivery.pickup"          -> updateStatus(deliveryId, DeliveryStatus.PICKUP);
+            case "delivery.dropoff"         -> updateStatus(deliveryId, DeliveryStatus.DROPOFF);
             case "delivery.delivered"-> updateStatus(deliveryId, DeliveryStatus.DELIVERED);
             case "delivery.failed"   -> updateStatus(deliveryId, DeliveryStatus.FAILED);
             case "delivery.returned" -> updateStatus(deliveryId, DeliveryStatus.RETURNED);

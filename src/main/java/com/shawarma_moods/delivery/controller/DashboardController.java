@@ -74,8 +74,10 @@ public class DashboardController {
         } else if (orderId.startsWith("D-")) {
             Long id = Long.parseLong(orderId.substring(2));
             deliveryOrderRepository.findById(id).ifPresent(order -> {
-                order.setStatus(DeliveryStatus.PICKUP);
+                order.setStatus(DeliveryStatus.PREPARING);
+                order.setEstimatedReadyAt(Instant.now().plus(estimatedMinutes, ChronoUnit.MINUTES));
                 deliveryOrderRepository.save(order);
+                log.info("Delivery order {} accepted — ready in {} min", orderId, estimatedMinutes);
             });
         }
         return ResponseEntity.ok().build();
