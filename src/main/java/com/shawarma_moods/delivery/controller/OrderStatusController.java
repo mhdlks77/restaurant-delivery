@@ -76,6 +76,7 @@ public class OrderStatusController {
         return switch (status) {
             case PENDING          -> "Your order has been received.";
             case CREATED          -> "Your order is confirmed — we're finding a driver.";
+            case PREPARING        -> "Your order is being prepared! 🍳";
             case READY_FOR_PICKUP -> "Your order is ready and waiting for the driver.";
             case PICKUP           -> "Your order is on its way! 🚗";
             case DROPOFF          -> "Your driver is nearby!";
