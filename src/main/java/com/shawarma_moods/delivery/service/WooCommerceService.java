@@ -36,16 +36,23 @@ public class WooCommerceService {
      * filters by location, and returns a categorised menu.
      */
     public JsonNode getMenu(Integer locationId) {
-        String base = wcProps.getUrl() + "/wp-json/wc/v3";
+        String wcUrl = wcProps.getUrl();
+        if (wcUrl == null || wcUrl.isBlank()) {
+            throw new IllegalStateException("WOOCOMMERCE_URL env var is not set on Railway");
+        }
+        // Strip trailing slash if present
+        wcUrl = wcUrl.stripTrailing().replaceAll("/$", "");
+        String base = wcUrl + "/wp-json/wc/v3";
 
         // Build product URL — attempt server-side taxonomy filter
-        UriComponentsBuilder productsUrl = UriComponentsBuilder
+        UriComponentsBuilder productsUrlBuilder = UriComponentsBuilder
                 .fromUriString(base + "/products")
                 .queryParam("per_page", 100)
                 .queryParam("status", "publish");
         if (locationId != null) {
-            productsUrl.queryParam("restaurant_location", locationId);
+            productsUrlBuilder.queryParam("restaurant_location", locationId);
         }
+        String productsUrl  = productsUrlBuilder.toUriString();
 
         String categoriesUrl = UriComponentsBuilder
                 .fromUriString(base + "/products/categories")
@@ -53,22 +60,35 @@ public class WooCommerceService {
                 .queryParam("hide_empty", true)
                 .toUriString();
 
+        log.info("Fetching menu from WooCommerce — products: {}", productsUrl);
+
         HttpHeaders headers = buildAuthHeaders();
 
-        // Fetch products and categories in parallel would need async;
-        // sequential is fine for the menu load
-        ResponseEntity<JsonNode> productsRes = restTemplate.exchange(
-                productsUrl.toUriString(), HttpMethod.GET,
-                new HttpEntity<>(headers), JsonNode.class);
+        try {
+            ResponseEntity<JsonNode> productsRes = restTemplate.exchange(
+                    productsUrl, HttpMethod.GET,
+                    new HttpEntity<>(headers), JsonNode.class);
 
-        ResponseEntity<JsonNode> categoriesRes = restTemplate.exchange(
-                categoriesUrl, HttpMethod.GET,
-                new HttpEntity<>(headers), JsonNode.class);
+            ResponseEntity<JsonNode> categoriesRes = restTemplate.exchange(
+                    categoriesUrl, HttpMethod.GET,
+                    new HttpEntity<>(headers), JsonNode.class);
 
-        JsonNode products   = productsRes.getBody();
-        JsonNode categories = categoriesRes.getBody();
+            JsonNode products   = productsRes.getBody();
+            JsonNode categories = categoriesRes.getBody();
 
-        return buildMenu(products, categories, locationId);
+            log.info("Menu fetched — {} products, {} categories",
+                    products != null ? products.size() : 0,
+                    categories != null ? categories.size() : 0);
+
+            return buildMenu(products, categories, locationId);
+        } catch (org.springframework.web.client.HttpClientErrorException e) {
+            log.error("WooCommerce API rejected menu request: {} {} — body: {}",
+                    e.getStatusCode(), e.getStatusText(), e.getResponseBodyAsString());
+            throw new RuntimeException("WooCommerce API error: " + e.getStatusCode(), e);
+        } catch (org.springframework.web.client.ResourceAccessException e) {
+            log.error("Could not reach WooCommerce at {}: {}", wcUrl, e.getMessage());
+            throw new RuntimeException("Could not reach WooCommerce store", e);
+        }
     }
 
     // ── Order proxy ──────────────────────────────────────────────────────────
