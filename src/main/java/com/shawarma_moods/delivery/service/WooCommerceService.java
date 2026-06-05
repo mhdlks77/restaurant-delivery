@@ -1,15 +1,16 @@
 package com.shawarma_moods.delivery.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.shawarma_moods.delivery.config.WooCommerceProperties;
-// ObjectMapper instantiated directly — not injected via Spring context
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 
 import java.util.Base64;
 import java.util.Map;
@@ -36,18 +37,8 @@ public class WooCommerceService {
      * filters by location, and returns a categorised menu.
      */
     public JsonNode getMenu(Integer locationId) {
-        String wcUrl = wcProps.getUrl();
-        if (wcUrl == null || wcUrl.isBlank()) {
-            throw new IllegalStateException("WOOCOMMERCE_URL env var is not set on Railway");
-        }
-        // Normalise — strip trailing slash, then strip /wp-json/wc/v3 if already present
-        wcUrl = wcUrl.stripTrailing().replaceAll("/$", "");
-        if (wcUrl.endsWith("/wp-json/wc/v3")) {
-            wcUrl = wcUrl.substring(0, wcUrl.length() - "/wp-json/wc/v3".length());
-        }
-        String base = wcUrl + "/wp-json/wc/v3";
+        String base = resolveBase();
 
-        // Build product URL — attempt server-side taxonomy filter
         UriComponentsBuilder productsUrlBuilder = UriComponentsBuilder
                 .fromUriString(base + "/products")
                 .queryParam("per_page", 100)
@@ -55,8 +46,7 @@ public class WooCommerceService {
         if (locationId != null) {
             productsUrlBuilder.queryParam("restaurant_location", locationId);
         }
-        String productsUrl  = productsUrlBuilder.toUriString();
-
+        String productsUrl   = productsUrlBuilder.toUriString();
         String categoriesUrl = UriComponentsBuilder
                 .fromUriString(base + "/products/categories")
                 .queryParam("per_page", 100)
@@ -68,29 +58,28 @@ public class WooCommerceService {
         HttpHeaders headers = buildAuthHeaders();
 
         try {
-            ResponseEntity<JsonNode> productsRes = restTemplate.exchange(
-                    productsUrl, HttpMethod.GET,
-                    new HttpEntity<>(headers), JsonNode.class);
+            // Fetch as String — avoids Jackson 2.x vs 3.x type mismatch on RestTemplate
+            String productsJson    = restTemplate.exchange(productsUrl,    HttpMethod.GET, new HttpEntity<>(headers), String.class).getBody();
+            String categoriesJson  = restTemplate.exchange(categoriesUrl,  HttpMethod.GET, new HttpEntity<>(headers), String.class).getBody();
 
-            ResponseEntity<JsonNode> categoriesRes = restTemplate.exchange(
-                    categoriesUrl, HttpMethod.GET,
-                    new HttpEntity<>(headers), JsonNode.class);
-
-            JsonNode products   = productsRes.getBody();
-            JsonNode categories = categoriesRes.getBody();
+            JsonNode products   = objectMapper.readTree(productsJson);
+            JsonNode categories = objectMapper.readTree(categoriesJson);
 
             log.info("Menu fetched — {} products, {} categories",
-                    products != null ? products.size() : 0,
-                    categories != null ? categories.size() : 0);
+                    products.size(), categories.size());
 
             return buildMenu(products, categories, locationId);
+
         } catch (org.springframework.web.client.HttpClientErrorException e) {
-            log.error("WooCommerce API rejected menu request: {} {} — body: {}",
-                    e.getStatusCode(), e.getStatusText(), e.getResponseBodyAsString());
+            log.error("WooCommerce API rejected menu request: {} — body: {}",
+                    e.getStatusCode(), e.getResponseBodyAsString());
             throw new RuntimeException("WooCommerce API error: " + e.getStatusCode(), e);
         } catch (org.springframework.web.client.ResourceAccessException e) {
-            log.error("Could not reach WooCommerce at {}: {}", wcUrl, e.getMessage());
+            log.error("Could not reach WooCommerce: {}", e.getMessage());
             throw new RuntimeException("Could not reach WooCommerce store", e);
+        } catch (Exception e) {
+            log.error("Unexpected error fetching menu: {}", e.getMessage(), e);
+            throw new RuntimeException("Menu fetch failed", e);
         }
     }
 
@@ -98,25 +87,47 @@ public class WooCommerceService {
 
     /**
      * Creates a WooCommerce order on behalf of the frontend.
-     * Returns the full WC order object (including payment_url and id).
+     * Returns the full WC order object (includes id and payment_url).
      */
     public JsonNode createOrder(Map<String, Object> orderPayload) {
-        String url = wcProps.getUrl() + "/wp-json/wc/v3/orders";
+        String url = resolveBase() + "/orders";
 
         HttpEntity<Map<String, Object>> request = new HttpEntity<>(orderPayload, buildAuthHeaders());
 
-        ResponseEntity<JsonNode> response = restTemplate.exchange(
-                url, HttpMethod.POST, request, JsonNode.class);
-
-        if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
-            throw new RuntimeException("WooCommerce order creation failed: " + response.getStatusCode());
+        try {
+            String responseBody = restTemplate.exchange(url, HttpMethod.POST, request, String.class).getBody();
+            JsonNode order = objectMapper.readTree(responseBody);
+            log.info("WooCommerce order created: id={}", order.path("id").asText());
+            return order;
+        } catch (org.springframework.web.client.HttpClientErrorException e) {
+            log.error("WooCommerce order creation failed: {} — body: {}",
+                    e.getStatusCode(), e.getResponseBodyAsString());
+            throw new RuntimeException("WooCommerce order creation failed: " + e.getStatusCode(), e);
+        } catch (Exception e) {
+            log.error("Unexpected error creating order: {}", e.getMessage(), e);
+            throw new RuntimeException("Order creation failed", e);
         }
-
-        log.info("WooCommerce order created: id={}", response.getBody().path("id").asText());
-        return response.getBody();
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────
+
+    /**
+     * Returns the WooCommerce REST API base URL (always ends with /wp-json/wc/v3).
+     * Handles WOOCOMMERCE_URL being set as either:
+     *   https://shawarma-moods.com
+     *   https://shawarma-moods.com/wp-json/wc/v3
+     */
+    private String resolveBase() {
+        String url = wcProps.getUrl();
+        if (url == null || url.isBlank()) {
+            throw new IllegalStateException("WOOCOMMERCE_URL env var is not set on Railway");
+        }
+        url = url.strip().replaceAll("/$", "");
+        if (url.endsWith("/wp-json/wc/v3")) {
+            url = url.substring(0, url.length() - "/wp-json/wc/v3".length());
+        }
+        return url + "/wp-json/wc/v3";
+    }
 
     private HttpHeaders buildAuthHeaders() {
         String credentials = Base64.getEncoder()
@@ -130,69 +141,53 @@ public class WooCommerceService {
     /**
      * Builds the categorised menu structure the frontend expects:
      * [ { name, items: [ { id, name, description, price, image } ] } ]
-     *
-     * Applies client-side meta filter on _yoast_wpseo_primary_restaurant_location
-     * as a fallback in case the taxonomy param isn't picked up server-side.
      */
     private JsonNode buildMenu(JsonNode products, JsonNode categories, Integer locationId) {
-        // Build category map: id → { name, items[] }
-        var categoryMap = new java.util.LinkedHashMap<Integer, java.util.Map<String, Object>>();
-        if (categories != null) {
-            for (JsonNode cat : categories) {
-                int id = cat.path("id").asInt();
-                categoryMap.put(id, new java.util.LinkedHashMap<>(Map.of(
-                        "name",  cat.path("name").asText(),
-                        "items", new java.util.ArrayList<>()
-                )));
-            }
+        var categoryMap = new java.util.LinkedHashMap<Integer, ObjectNode>();
+
+        for (JsonNode cat : categories) {
+            int id = cat.path("id").asInt();
+            ObjectNode node = objectMapper.createObjectNode();
+            node.put("name", cat.path("name").asText());
+            node.set("items", objectMapper.createArrayNode());
+            categoryMap.put(id, node);
         }
 
-        if (products != null) {
-            for (JsonNode product : products) {
-                // Client-side location filter fallback
-                if (locationId != null && !matchesLocation(product, locationId)) {
-                    continue;
-                }
+        for (JsonNode product : products) {
+            if (locationId != null && !matchesLocation(product, locationId)) continue;
 
-                var item = new java.util.LinkedHashMap<String, Object>();
-                item.put("id",          product.path("id").asInt());
-                item.put("name",        product.path("name").asText());
-                item.put("description", product.path("short_description").asText("").replaceAll("<[^>]+>", ""));
+            ObjectNode item = objectMapper.createObjectNode();
+            item.put("id",   product.path("id").asInt());
+            item.put("name", product.path("name").asText());
+            item.put("description", product.path("short_description").asText("").replaceAll("<[^>]+>", ""));
 
-                String price = product.path("price").asText("");
-                if (price.isBlank()) price = product.path("regular_price").asText("");
-                item.put("price", price.isBlank() ? null : Double.parseDouble(price));
+            String price = product.path("price").asText("");
+            if (price.isBlank()) price = product.path("regular_price").asText("");
+            if (price.isBlank()) item.putNull("price");
+            else item.put("price", Double.parseDouble(price));
 
-                JsonNode images = product.path("images");
-                item.put("image", images.isEmpty() ? null : images.get(0).path("src").asText(null));
+            JsonNode images = product.path("images");
+            if (images.isEmpty()) item.putNull("image");
+            else item.put("image", images.get(0).path("src").asText());
 
-                // Assign to each of its categories
-                for (JsonNode cat : product.path("categories")) {
-                    int catId = cat.path("id").asInt();
-                    if (categoryMap.containsKey(catId)) {
-                        @SuppressWarnings("unchecked")
-                        var items = (java.util.List<Object>) categoryMap.get(catId).get("items");
-                        items.add(item);
-                    }
+            for (JsonNode cat : product.path("categories")) {
+                int catId = cat.path("id").asInt();
+                if (categoryMap.containsKey(catId)) {
+                    ((ArrayNode) categoryMap.get(catId).get("items")).add(item);
                 }
             }
         }
 
-        // Filter out empty categories and return as JsonNode
-        var result = categoryMap.values().stream()
-                .filter(cat -> {
-                    @SuppressWarnings("unchecked")
-                    var items = (java.util.List<?>) cat.get("items");
-                    return !items.isEmpty();
-                })
-                .toList();
+        ArrayNode result = objectMapper.createArrayNode();
+        categoryMap.values().stream()
+                .filter(cat -> !cat.get("items").isEmpty())
+                .forEach(result::add);
 
-        return objectMapper.valueToTree(result);
+        return result;
     }
 
     private boolean matchesLocation(JsonNode product, int locationId) {
-        JsonNode meta = product.path("meta_data");
-        for (JsonNode m : meta) {
+        for (JsonNode m : product.path("meta_data")) {
             if ("_yoast_wpseo_primary_restaurant_location".equals(m.path("key").asText())) {
                 return String.valueOf(locationId).equals(m.path("value").asText());
             }

@@ -1,6 +1,6 @@
 package com.shawarma_moods.delivery.controller;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import com.shawarma_moods.delivery.service.WooCommerceService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
