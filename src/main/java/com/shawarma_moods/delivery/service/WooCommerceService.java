@@ -40,8 +40,11 @@ public class WooCommerceService {
         if (wcUrl == null || wcUrl.isBlank()) {
             throw new IllegalStateException("WOOCOMMERCE_URL env var is not set on Railway");
         }
-        // Strip trailing slash if present
+        // Normalise — strip trailing slash, then strip /wp-json/wc/v3 if already present
         wcUrl = wcUrl.stripTrailing().replaceAll("/$", "");
+        if (wcUrl.endsWith("/wp-json/wc/v3")) {
+            wcUrl = wcUrl.substring(0, wcUrl.length() - "/wp-json/wc/v3".length());
+        }
         String base = wcUrl + "/wp-json/wc/v3";
 
         // Build product URL — attempt server-side taxonomy filter
