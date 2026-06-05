@@ -46,10 +46,7 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-webmvc</artifactId>
 		</dependency>
-		<dependency>
-			<groupId>com.fasterxml.jackson.core</groupId>
-			<artifactId>jackson-databind</artifactId>
-		</dependency>
+		<!-- Jackson 3.x is provided by Spring Boot 4.x via tools.jackson — no explicit dependency needed -->
 
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
