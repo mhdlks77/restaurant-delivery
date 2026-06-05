@@ -41,7 +41,7 @@ public class WooCommerceService {
 
         // Build product URL — attempt server-side taxonomy filter
         UriComponentsBuilder productsUrl = UriComponentsBuilder
-                .fromHttpUrl(base + "/products")
+                .fromUriString(base + "/products")
                 .queryParam("per_page", 100)
                 .queryParam("status", "publish");
         if (locationId != null) {
@@ -49,7 +49,7 @@ public class WooCommerceService {
         }
 
         String categoriesUrl = UriComponentsBuilder
-                .fromHttpUrl(base + "/products/categories")
+                .fromUriString(base + "/products/categories")
                 .queryParam("per_page", 100)
                 .queryParam("hide_empty", true)
                 .toUriString();
