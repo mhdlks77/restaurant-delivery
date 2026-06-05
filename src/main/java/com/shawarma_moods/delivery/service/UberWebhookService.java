@@ -8,12 +8,26 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
 public class UberWebhookService {
 
-    private static Logger log = LoggerFactory.getLogger(UberWebhookService.class);
+    private static final Logger log = LoggerFactory.getLogger(UberWebhookService.class);
+
+    /**
+     * Forward-only status progression. Terminal statuses (FAILED, RETURNED, CANCELLED)
+     * are not in this list — they can always be applied regardless of current status.
+     */
+    private static final List<DeliveryStatus> STATUS_PROGRESSION = List.of(
+            DeliveryStatus.CREATED,
+            DeliveryStatus.PREPARING,
+            DeliveryStatus.READY_FOR_PICKUP,
+            DeliveryStatus.PICKUP,
+            DeliveryStatus.DROPOFF,
+            DeliveryStatus.DELIVERED
+    );
 
     private final DeliveryOrderRepository deliveryOrderRepository;
 
@@ -61,6 +75,19 @@ public class UberWebhookService {
 
         DeliveryOrder order = orderOpt.get();
         DeliveryStatus previousStatus = order.getStatus();
+
+        // Guard against status regression for progression statuses.
+        // Terminal statuses (FAILED, RETURNED, CANCELLED) always apply.
+        if (STATUS_PROGRESSION.contains(newStatus) && STATUS_PROGRESSION.contains(previousStatus)) {
+            int currentIndex = STATUS_PROGRESSION.indexOf(previousStatus);
+            int newIndex     = STATUS_PROGRESSION.indexOf(newStatus);
+            if (newIndex < currentIndex) {
+                log.warn("Ignoring regressive Uber status update for delivery {}: {} → {} (late/duplicate event)",
+                        uberDeliveryId, previousStatus, newStatus);
+                return;
+            }
+        }
+
         order.setStatus(newStatus);
         deliveryOrderRepository.save(order);
 
