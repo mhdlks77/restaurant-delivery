@@ -1,8 +1,10 @@
 package com.shawarma_moods.delivery.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
+@Primary
 @Component
 @ConfigurationProperties(prefix = "uber")
 public class UberProperties {
