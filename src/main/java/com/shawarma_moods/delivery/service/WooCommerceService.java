@@ -3,6 +3,7 @@ package com.shawarma_moods.delivery.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.shawarma_moods.delivery.config.WooCommerceProperties;
+// ObjectMapper instantiated directly — not injected via Spring context
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.*;
@@ -20,14 +21,12 @@ public class WooCommerceService {
 
     private final WooCommerceProperties wcProps;
     private final RestTemplate restTemplate;
-    private final ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     public WooCommerceService(WooCommerceProperties wcProps,
-                              RestTemplate restTemplate,
-                              ObjectMapper objectMapper) {
+                              RestTemplate restTemplate) {
         this.wcProps      = wcProps;
         this.restTemplate = restTemplate;
-        this.objectMapper = objectMapper;
     }
 
     // ── Menu ────────────────────────────────────────────────────────────────
