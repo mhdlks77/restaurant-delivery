@@ -68,31 +68,6 @@ public class WooCommerceService {
             log.info("WooCommerce returned {} products and {} categories before filtering",
                     products.size(), categories.size());
 
-            // Log how many products pass the location filter
-            if (locationId != null) {
-                long matched = 0;
-                long noMeta  = 0;
-                for (JsonNode p : products) {
-                    boolean hasMeta = false;
-                    for (JsonNode m : p.path("meta_data")) {
-                        if ("_yoast_wpseo_primary_restaurant_location".equals(m.path("key").asText())) {
-                            hasMeta = true;
-                            if (String.valueOf(locationId).equals(m.path("value").asText())) matched++;
-                            else log.info("Product '{}' has location meta = '{}' (expected {})",
-                                    p.path("name").asText(), m.path("value").asText(), locationId);
-                            break;
-                        }
-                    }
-                    if (!hasMeta) {
-                        noMeta++;
-                        log.debug("Product '{}' has NO location meta — will be filtered out",
-                                p.path("name").asText());
-                    }
-                }
-                log.info("Location filter (locationId={}): {} products match, {} have no location meta and will be excluded",
-                        locationId, matched, noMeta);
-            }
-
             return buildMenu(products, categories, locationId);
 
         } catch (org.springframework.web.client.HttpClientErrorException e) {
@@ -179,7 +154,8 @@ public class WooCommerceService {
         }
 
         for (JsonNode product : products) {
-            if (locationId != null && !matchesLocation(product, locationId)) continue;
+            // Location filter intentionally disabled — all products are available at all
+            // active locations. Re-enable matchesLocation() when per-location menus are needed.
 
             ObjectNode item = objectMapper.createObjectNode();
             item.put("id",   product.path("id").asInt());
