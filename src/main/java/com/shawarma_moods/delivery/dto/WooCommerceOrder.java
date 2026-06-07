@@ -29,6 +29,9 @@ public class WooCommerceOrder {
     @JsonProperty("total")
     private String total;
 
+    @JsonProperty("customer_note")
+    private String customerNote;
+
     @JsonProperty("total_tax")
     private String totalTax;
 
@@ -173,6 +176,7 @@ public class WooCommerceOrder {
         try { return (int) (Double.parseDouble(shippingTotal) * 100); } catch (Exception e) { return 0; }
     }
 
+    public String getCustomerNote()      { return customerNote; }
     public Long getId()                  { return id; }
     public String getStatus()            { return status; }
     public Address getBilling()          { return billing; }

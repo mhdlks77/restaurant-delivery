@@ -23,6 +23,7 @@ public class OrderSummaryResponse {
     private Instant updatedAt;
     private String customerAddress;  // only for delivery
     private String uberDeliveryId;   // null if Uber dispatch failed before creating a delivery
+    private String customerNote;
 
     // --- Static factory methods ---
 
@@ -36,6 +37,7 @@ public class OrderSummaryResponse {
         r.customerPhone = o.getCustomerPhone();
         r.customerAddress = o.getCustomerAddress();
         r.uberDeliveryId = o.getUberDeliveryId();
+        r.customerNote = o.getCustomerNote();
         r.itemsDescription = o.getItemsDescription();
         r.totalCents = o.getTotalCents();
         r.taxCents = o.getTaxCents();
@@ -55,6 +57,7 @@ public class OrderSummaryResponse {
         r.customerName = o.getCustomerName();
         r.customerPhone = o.getCustomerPhone();
         r.customerEmail = o.getCustomerEmail();
+        r.customerNote = o.getCustomerNote();
         r.itemsDescription = o.getItemsDescription();
         r.totalCents = o.getTotalCents();
         r.taxCents = o.getTaxCents();
@@ -82,4 +85,5 @@ public class OrderSummaryResponse {
     public Instant getUpdatedAt()         { return updatedAt; }
     public String getCustomerAddress()    { return customerAddress; }
     public String getUberDeliveryId()     { return uberDeliveryId; }
+    public String getCustomerNote()       { return customerNote; }
 }

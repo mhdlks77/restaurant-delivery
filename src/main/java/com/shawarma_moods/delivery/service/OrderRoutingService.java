@@ -67,6 +67,7 @@ public class OrderRoutingService {
         Integer totalCents     = order.getTotalCents();
         Integer taxCents       = order.getTaxCents();
         Integer shippingCents  = order.getShippingCents();
+        String customerNote    = order.getCustomerNote();
 
         log.info("Creating Uber delivery for WC order {}: {} → {}",
                 wcOrderId, customerName, customerAddress);
@@ -87,7 +88,8 @@ public class OrderRoutingService {
                     taxCents,
                     shippingCents,
                     manifest,
-                    itemsJson
+                    itemsJson,
+                    customerNote
             );
         } catch (Exception e) {
             log.error(
@@ -96,7 +98,7 @@ public class OrderRoutingService {
                 wcOrderId, customerName, e.getMessage(), customerPhone
             );
             persistFailedDelivery(wcOrderId, customerName, customerAddress,
-                    customerPhone, totalCents, taxCents, shippingCents, itemsJson);
+                    customerPhone, totalCents, taxCents, shippingCents, itemsJson, customerNote);
         }
     }
 
@@ -112,7 +114,8 @@ public class OrderRoutingService {
             Integer totalCents,
             Integer taxCents,
             Integer shippingCents,
-            String itemsJson
+            String itemsJson,
+            String customerNote
     ) {
         // Avoid duplicate failure records on webhook retries
         if (deliveryOrderRepository.findByWoocommerceOrderId(wcOrderId).isPresent()) {
@@ -130,6 +133,7 @@ public class OrderRoutingService {
         failed.setTotalCents(totalCents);
         failed.setTaxCents(taxCents);
         failed.setShippingCents(shippingCents);
+        failed.setCustomerNote(customerNote);
         deliveryOrderRepository.save(failed);
         log.info("Saved FAILED delivery order for WC order {}", wcOrderId);
     }
@@ -152,6 +156,7 @@ public class OrderRoutingService {
         pickupOrder.setTotalCents(order.getTotalCents());
         pickupOrder.setTaxCents(order.getTaxCents());
         pickupOrder.setShippingCents(order.getShippingCents());
+        pickupOrder.setCustomerNote(order.getCustomerNote());
 
         pickupOrderRepository.save(pickupOrder);
 

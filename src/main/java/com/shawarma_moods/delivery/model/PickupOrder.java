@@ -36,6 +36,9 @@ public class PickupOrder {
     @Column(name = "shipping_cents")
     private Integer shippingCents;
 
+    @Column(name = "customer_note")
+    private String customerNote;
+
     @Column(name = "status")
     @Enumerated(EnumType.STRING)
     private PickupStatus status;
@@ -76,6 +79,8 @@ public class PickupOrder {
     public void setTaxCents(Integer v) { this.taxCents = v; }
     public Integer getShippingCents() { return shippingCents; }
     public void setShippingCents(Integer v) { this.shippingCents = v; }
+    public String getCustomerNote() { return customerNote; }
+    public void setCustomerNote(String v) { this.customerNote = v; }
     public PickupStatus getStatus() { return status; }
     public void setStatus(PickupStatus v) { this.status = v; }
     public Instant getEstimatedReadyAt() { return estimatedReadyAt; }

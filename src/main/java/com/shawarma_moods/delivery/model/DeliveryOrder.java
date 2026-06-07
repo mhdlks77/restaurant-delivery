@@ -53,6 +53,9 @@ public class DeliveryOrder {
     @Column(name = "shipping_cents")
     private Integer shippingCents;
 
+    @Column(name = "customer_note")
+    private String customerNote;
+
     @Column(name = "created_at")
     private Instant createdAt;
 
@@ -151,6 +154,8 @@ public class DeliveryOrder {
     public void setTaxCents(Integer taxCents) { this.taxCents = taxCents; }
     public Integer getShippingCents() { return shippingCents; }
     public void setShippingCents(Integer shippingCents) { this.shippingCents = shippingCents; }
+    public String getCustomerNote() { return customerNote; }
+    public void setCustomerNote(String customerNote) { this.customerNote = customerNote; }
 
     public Instant getCreatedAt() {
         return createdAt;

@@ -89,7 +89,8 @@ public class UberDeliveryService {
             Integer taxCents,
             Integer shippingCents,
             String manifestDescription,
-            String itemsJson
+            String itemsJson,
+            String customerNote
     ) {
         // Idempotency check - never create two deliveries for the same order
         deliveryOrderRepository.findByWoocommerceOrderId(woocommerceOrderId).ifPresent(existing -> {
@@ -117,6 +118,9 @@ public class UberDeliveryService {
         deliveryRequest.setDropoffPhoneNumber(customerPhone);
         deliveryRequest.setManifestTotalValue(orderValueCents);
         deliveryRequest.setManifestReference(woocommerceOrderId);
+        if (customerNote != null && !customerNote.isBlank()) {
+            deliveryRequest.setDropoffNotes(customerNote);
+        }
         deliveryRequest.setManifestItems(List.of(
                 new UberManifestItem(
                         manifestDescription,   // real WC line items
@@ -138,7 +142,7 @@ public class UberDeliveryService {
                 log.info("Delivery created successfully: uberDeliveryId={}", deliveryResponse.getId());
 
                 //step 3 : persist to database
-                persistDelivery(woocommerceOrderId, customerName, customerAddress, customerPhone, orderValueCents, taxCents, shippingCents, itemsJson, deliveryResponse);
+                persistDelivery(woocommerceOrderId, customerName, customerAddress, customerPhone, orderValueCents, taxCents, shippingCents, itemsJson, customerNote, deliveryResponse);
 
                 return deliveryResponse;
             }
@@ -161,6 +165,7 @@ public class UberDeliveryService {
             Integer taxCents,
             Integer shippingCents,
             String itemsJson,
+            String customerNote,
             UberDeliveryResponse deliveryResponse
     ) {
         DeliveryOrder order = new DeliveryOrder();
@@ -176,6 +181,7 @@ public class UberDeliveryService {
         order.setTotalCents(totalCents);
         order.setTaxCents(taxCents);
         order.setShippingCents(shippingCents);
+        order.setCustomerNote(customerNote);
         deliveryOrderRepository.save(order);
         log.info("Delivery order persisted to DB for Woocommerce order {}", woocommerceOrderId);
     }

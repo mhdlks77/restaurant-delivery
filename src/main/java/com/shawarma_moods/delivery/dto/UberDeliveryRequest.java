@@ -36,6 +36,9 @@ public class UberDeliveryRequest {
     @JsonProperty("manifest_reference")
     private String manifestReference;
 
+    @JsonProperty("dropoff_notes")
+    private String dropoffNotes;
+
     // Getters and setters
     public String getQuoteId() { return quoteId; }
     public void setQuoteId(String quoteId) { this.quoteId = quoteId; }
@@ -70,4 +73,7 @@ public class UberDeliveryRequest {
 
     public String getManifestReference() { return manifestReference; }
     public void setManifestReference(String manifestReference) { this.manifestReference = manifestReference; }
+
+    public String getDropoffNotes() { return dropoffNotes; }
+    public void setDropoffNotes(String dropoffNotes) { this.dropoffNotes = dropoffNotes; }
 }
