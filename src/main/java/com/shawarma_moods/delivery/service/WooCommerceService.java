@@ -65,8 +65,33 @@ public class WooCommerceService {
             JsonNode products   = objectMapper.readTree(productsJson);
             JsonNode categories = objectMapper.readTree(categoriesJson);
 
-            log.info("Menu fetched — {} products, {} categories",
+            log.info("WooCommerce returned {} products and {} categories before filtering",
                     products.size(), categories.size());
+
+            // Log how many products pass the location filter
+            if (locationId != null) {
+                long matched = 0;
+                long noMeta  = 0;
+                for (JsonNode p : products) {
+                    boolean hasMeta = false;
+                    for (JsonNode m : p.path("meta_data")) {
+                        if ("_yoast_wpseo_primary_restaurant_location".equals(m.path("key").asText())) {
+                            hasMeta = true;
+                            if (String.valueOf(locationId).equals(m.path("value").asText())) matched++;
+                            else log.debug("Product '{}' has location meta = '{}' (expected {})",
+                                    p.path("name").asText(), m.path("value").asText(), locationId);
+                            break;
+                        }
+                    }
+                    if (!hasMeta) {
+                        noMeta++;
+                        log.debug("Product '{}' has NO location meta — will be filtered out",
+                                p.path("name").asText());
+                    }
+                }
+                log.info("Location filter (locationId={}): {} products match, {} have no location meta and will be excluded",
+                        locationId, matched, noMeta);
+            }
 
             return buildMenu(products, categories, locationId);
 
