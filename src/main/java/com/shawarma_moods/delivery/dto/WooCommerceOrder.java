@@ -67,15 +67,28 @@ public class WooCommerceOrder {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class LineItem {
-        @JsonProperty("name")     private String name;
-        @JsonProperty("quantity") private Integer quantity;
-        @JsonProperty("price")    private String price;
-        @JsonProperty("total")    private String total; // row total after discounts
+        @JsonProperty("name")      private String name;
+        @JsonProperty("quantity")  private Integer quantity;
+        @JsonProperty("price")     private String price;
+        @JsonProperty("total")     private String total;
+        @JsonProperty("meta_data") private List<MetaData> metaData;
 
-        public String getName()       { return name; }
-        public Integer getQuantity()  { return quantity; }
-        public String getPrice()      { return price; }
-        public String getRowTotal()   { return total; }
+        public String getName()         { return name; }
+        public Integer getQuantity()    { return quantity; }
+        public String getPrice()        { return price; }
+        public String getRowTotal()     { return total; }
+        public List<MetaData> getMetaData() { return metaData; }
+
+        /** Returns the variation label if present (e.g. "Lebanese Style") */
+        public String getVariationLabel() {
+            if (metaData == null) return null;
+            return metaData.stream()
+                    .filter(m -> m.getKey() != null && m.getKey().startsWith("pa_"))
+                    .map(MetaData::getValue)
+                    .filter(v -> v != null && !v.isBlank())
+                    .findFirst()
+                    .orElse(null);
+        }
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -113,6 +126,8 @@ public class WooCommerceOrder {
         for (int i = 0; i < lineItems.size(); i++) {
             LineItem item = lineItems.get(i);
             sb.append(item.getQuantity()).append("x ").append(item.getName());
+            String variation = item.getVariationLabel();
+            if (variation != null) sb.append(" (").append(variation).append(")");
             if (i < lineItems.size() - 1) sb.append(", ");
         }
         return sb.toString();
@@ -130,8 +145,12 @@ public class WooCommerceOrder {
             int rowCents = 0;
             try { rowCents = (int) (Double.parseDouble(item.getRowTotal()) * 100); } catch (Exception ignored) {}
             String safeName = item.getName() != null ? item.getName().replace("\\", "\\\\").replace("\"", "\\\"") : "";
+            String variation = item.getVariationLabel();
+            String displayName = (variation != null)
+                    ? safeName + " (" + variation.replace("\\", "\\\\").replace("\"", "\\\"") + ")"
+                    : safeName;
             sb.append("{\"qty\":").append(item.getQuantity())
-              .append(",\"name\":\"").append(safeName)
+              .append(",\"name\":\"").append(displayName)
               .append("\",\"rowCents\":").append(rowCents).append("}");
             if (i < lineItems.size() - 1) sb.append(",");
         }

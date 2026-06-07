@@ -68,7 +68,7 @@ public class WooCommerceService {
             log.info("WooCommerce returned {} products and {} categories before filtering",
                     products.size(), categories.size());
 
-            return buildMenu(products, categories, locationId);
+            return buildMenu(products, categories, locationId, base, headers);
 
         } catch (org.springframework.web.client.HttpClientErrorException e) {
             log.error("WooCommerce API rejected menu request: {} — body: {}",
@@ -142,7 +142,8 @@ public class WooCommerceService {
      * Builds the categorised menu structure the frontend expects:
      * [ { name, items: [ { id, name, description, price, image } ] } ]
      */
-    private JsonNode buildMenu(JsonNode products, JsonNode categories, Integer locationId) {
+    private JsonNode buildMenu(JsonNode products, JsonNode categories, Integer locationId,
+                               String base, HttpHeaders headers) {
         var categoryMap = new java.util.LinkedHashMap<Integer, ObjectNode>();
 
         for (JsonNode cat : categories) {
@@ -161,6 +162,7 @@ public class WooCommerceService {
             item.put("id",   product.path("id").asInt());
             item.put("name", product.path("name").asText());
             item.put("description", product.path("short_description").asText("").replaceAll("<[^>]+>", ""));
+            item.put("type", product.path("type").asText("simple"));
 
             String price = product.path("price").asText("");
             if (price.isBlank()) price = product.path("regular_price").asText("");
@@ -170,6 +172,12 @@ public class WooCommerceService {
             JsonNode images = product.path("images");
             if (images.isEmpty()) item.putNull("image");
             else item.put("image", images.get(0).path("src").asText());
+
+            // Fetch variations for variable products
+            if ("variable".equals(product.path("type").asText())) {
+                ArrayNode variations = fetchVariations(base, product.path("id").asInt(), headers);
+                item.set("variations", variations);
+            }
 
             for (JsonNode cat : product.path("categories")) {
                 int catId = cat.path("id").asInt();
@@ -184,6 +192,46 @@ public class WooCommerceService {
                 .filter(cat -> !cat.get("items").isEmpty())
                 .forEach(result::add);
 
+        return result;
+    }
+
+    /**
+     * Fetches variations for a variable product and returns them as a JsonNode array.
+     * Each variation: { id, name (attribute option label), price }
+     */
+    private ArrayNode fetchVariations(String base, int productId, HttpHeaders headers) {
+        ArrayNode result = objectMapper.createArrayNode();
+        try {
+            String url = UriComponentsBuilder
+                    .fromUriString(base + "/products/" + productId + "/variations")
+                    .queryParam("per_page", 20)
+                    .toUriString();
+            String json = restTemplate.exchange(url, HttpMethod.GET,
+                    new HttpEntity<>(headers), String.class).getBody();
+            JsonNode variations = objectMapper.readTree(json);
+            for (JsonNode v : variations) {
+                ObjectNode variation = objectMapper.createObjectNode();
+                variation.put("id", v.path("id").asInt());
+
+                // Build a label from the variation's attribute options
+                // e.g. "Lebanese Style" or "Lebanese Style / Extra Spicy"
+                StringBuilder label = new StringBuilder();
+                for (JsonNode attr : v.path("attributes")) {
+                    if (!label.isEmpty()) label.append(" / ");
+                    label.append(attr.path("option").asText());
+                }
+                variation.put("name", label.isEmpty() ? "Variation " + v.path("id").asInt() : label.toString());
+
+                String vPrice = v.path("price").asText("");
+                if (vPrice.isBlank()) vPrice = v.path("regular_price").asText("");
+                if (vPrice.isBlank()) variation.putNull("price");
+                else variation.put("price", Double.parseDouble(vPrice));
+
+                result.add(variation);
+            }
+        } catch (Exception e) {
+            log.warn("Could not fetch variations for product {}: {}", productId, e.getMessage());
+        }
         return result;
     }
 
