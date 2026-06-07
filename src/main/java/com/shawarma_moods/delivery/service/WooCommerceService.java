@@ -78,7 +78,7 @@ public class WooCommerceService {
                         if ("_yoast_wpseo_primary_restaurant_location".equals(m.path("key").asText())) {
                             hasMeta = true;
                             if (String.valueOf(locationId).equals(m.path("value").asText())) matched++;
-                            else log.debug("Product '{}' has location meta = '{}' (expected {})",
+                            else log.info("Product '{}' has location meta = '{}' (expected {})",
                                     p.path("name").asText(), m.path("value").asText(), locationId);
                             break;
                         }
