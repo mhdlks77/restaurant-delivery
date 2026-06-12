@@ -159,8 +159,10 @@ public class WooCommerceOrder {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < lineItems.size(); i++) {
             LineItem item = lineItems.get(i);
-            sb.append(item.getQuantity()).append("x ").append(item.getName());
-            String variation = item.getVariationLabel();
+            String[] nv = splitNameVariation(item.getName());
+            String variation = item.getVariationLabel() != null ? item.getVariationLabel() : nv[1];
+
+            sb.append(item.getQuantity()).append("x ").append(nv[0]);
             if (variation != null) sb.append(" (").append(variation).append(")");
             String trio = item.getTrioLabel();
             if (trio != null) sb.append(" [").append(trio).append("]");
@@ -185,10 +187,16 @@ public class WooCommerceOrder {
             int rowCents = 0;
             try { rowCents = (int) (Double.parseDouble(item.getRowTotal()) * 100); } catch (Exception ignored) {}
 
-            sb.append("{\"qty\":").append(item.getQuantity())
-              .append(",\"name\":\"").append(jsonEscape(item.getName())).append("\"");
+            // WooCommerce bakes the variation into the line-item name as
+            // "Parent<span> - </span>Variation". Split it apart and fall back to
+            // pa_ meta if the name had no embedded variation.
+            String[] nv = splitNameVariation(item.getName());
+            String baseName  = nv[0];
+            String variation = item.getVariationLabel() != null ? item.getVariationLabel() : nv[1];
 
-            String variation = item.getVariationLabel();
+            sb.append("{\"qty\":").append(item.getQuantity())
+              .append(",\"name\":\"").append(jsonEscape(baseName)).append("\"");
+
             if (variation != null) {
                 sb.append(",\"variation\":\"").append(jsonEscape(variation)).append("\"");
             }
@@ -208,6 +216,25 @@ public class WooCommerceOrder {
     /** Removes any HTML tags WooCommerce may embed in a meta value. */
     private static String stripHtml(String s) {
         return s == null ? "" : s.replaceAll("<[^>]+>", "").trim();
+    }
+
+    /**
+     * Splits a WooCommerce line-item name into [baseName, variation].
+     * Variable products arrive as "Parent<span> - </span>Variation"; we split on
+     * that span-wrapped separator. If there is none, variation is null. Both
+     * parts are stripped of any remaining HTML.
+     *
+     * @return a 2-element array: [0] = clean base name, [1] = variation or null
+     */
+    private static String[] splitNameVariation(String rawName) {
+        if (rawName == null) return new String[]{ "", null };
+        String[] parts = rawName.split("<span[^>]*>\\s*[-–—]\\s*</span>", 2);
+        if (parts.length == 2) {
+            String base = stripHtml(parts[0]);
+            String variation = stripHtml(parts[1]);
+            return new String[]{ base, variation.isBlank() ? null : variation };
+        }
+        return new String[]{ stripHtml(rawName), null };
     }
 
     /** Escapes a string for safe inclusion in a manually-built JSON string. */
