@@ -42,7 +42,7 @@ public class OrderRequestValidator {
 
     // Line-item meta keys we allow through (trio configuration only)
     private static final Set<String> ALLOWED_LINE_ITEM_META =
-            Set.of("_trio", "_trio_side", "_trio_drink");
+            Set.of("Trio", "Trio Side", "Trio Drink");
 
     /**
      * Validates the incoming payload and returns a clean, server-controlled

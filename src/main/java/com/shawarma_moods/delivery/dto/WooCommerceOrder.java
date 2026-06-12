@@ -92,6 +92,34 @@ public class WooCommerceOrder {
                     .findFirst()
                     .orElse(null);
         }
+
+        /**
+         * Returns a human-readable trio label if this line item is a trio,
+         * e.g. "Trio: Frites, Coke". Returns null for non-trio items.
+         */
+        public String getTrioLabel() {
+            String trio = metaValue("Trio");
+            if (trio == null || !trio.equalsIgnoreCase("Yes")) return null;
+
+            String side  = metaValue("Trio Side");
+            String drink = metaValue("Trio Drink");
+
+            StringBuilder sb = new StringBuilder("Trio");
+            if (side != null)  sb.append(": ").append(side);
+            if (drink != null) sb.append(side != null ? ", " : ": ").append(drink);
+            return sb.toString();
+        }
+
+        /** Case-insensitive line-item meta lookup. */
+        private String metaValue(String key) {
+            if (metaData == null) return null;
+            return metaData.stream()
+                    .filter(m -> key.equalsIgnoreCase(m.getKey()))
+                    .map(MetaData::getValue)
+                    .filter(v -> v != null && !v.isBlank())
+                    .findFirst()
+                    .orElse(null);
+        }
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -131,6 +159,8 @@ public class WooCommerceOrder {
             sb.append(item.getQuantity()).append("x ").append(item.getName());
             String variation = item.getVariationLabel();
             if (variation != null) sb.append(" (").append(variation).append(")");
+            String trio = item.getTrioLabel();
+            if (trio != null) sb.append(" [").append(trio).append("]");
             if (i < lineItems.size() - 1) sb.append(", ");
         }
         return sb.toString();
@@ -152,6 +182,10 @@ public class WooCommerceOrder {
             String displayName = (variation != null)
                     ? safeName + " (" + variation.replace("\\", "\\\\").replace("\"", "\\\"") + ")"
                     : safeName;
+            String trio = item.getTrioLabel();
+            if (trio != null) {
+                displayName += " — " + trio.replace("\\", "\\\\").replace("\"", "\\\"");
+            }
             sb.append("{\"qty\":").append(item.getQuantity())
               .append(",\"name\":\"").append(displayName)
               .append("\",\"rowCents\":").append(rowCents).append("}");
