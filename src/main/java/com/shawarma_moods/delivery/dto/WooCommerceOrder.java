@@ -82,13 +82,16 @@ public class WooCommerceOrder {
         public String getRowTotal()     { return total; }
         public List<MetaData> getMetaData() { return metaData; }
 
-        /** Returns the variation label if present (e.g. "Lebanese Style") */
+        /** Returns the variation label if present (e.g. "Lebanese Style"),
+         *  stripped of any HTML WooCommerce may include in the attribute value. */
         public String getVariationLabel() {
             if (metaData == null) return null;
             return metaData.stream()
                     .filter(m -> m.getKey() != null && m.getKey().startsWith("pa_"))
                     .map(MetaData::getValue)
                     .filter(v -> v != null && !v.isBlank())
+                    .map(WooCommerceOrder::stripHtml)
+                    .filter(v -> !v.isBlank())
                     .findFirst()
                     .orElse(null);
         }
@@ -167,8 +170,12 @@ public class WooCommerceOrder {
     }
 
     /**
-     * Builds a JSON array of line items with prices for dashboard receipt display.
-     * Format: [{"qty":2,"name":"Kafta Pita","rowCents":1798},...]
+     * Builds a JSON array of line items for the dashboard receipt. Variation and
+     * trio are kept as SEPARATE fields (not crammed into the name) so the
+     * dashboard can render the item name in bold with details on their own lines.
+     * Format: [{"qty":2,"name":"Kafta Pita","variation":"All Dressed",
+     *           "trio":"Trio: Frites, Coke","rowCents":1798}, ...]
+     * variation/trio are omitted when not applicable.
      */
     public String buildLineItemsJson() {
         if (lineItems == null || lineItems.isEmpty()) return "[]";
@@ -177,22 +184,35 @@ public class WooCommerceOrder {
             LineItem item = lineItems.get(i);
             int rowCents = 0;
             try { rowCents = (int) (Double.parseDouble(item.getRowTotal()) * 100); } catch (Exception ignored) {}
-            String safeName = item.getName() != null ? item.getName().replace("\\", "\\\\").replace("\"", "\\\"") : "";
+
+            sb.append("{\"qty\":").append(item.getQuantity())
+              .append(",\"name\":\"").append(jsonEscape(item.getName())).append("\"");
+
             String variation = item.getVariationLabel();
-            String displayName = (variation != null)
-                    ? safeName + " (" + variation.replace("\\", "\\\\").replace("\"", "\\\"") + ")"
-                    : safeName;
+            if (variation != null) {
+                sb.append(",\"variation\":\"").append(jsonEscape(variation)).append("\"");
+            }
+
             String trio = item.getTrioLabel();
             if (trio != null) {
-                displayName += " — " + trio.replace("\\", "\\\\").replace("\"", "\\\"");
+                sb.append(",\"trio\":\"").append(jsonEscape(trio)).append("\"");
             }
-            sb.append("{\"qty\":").append(item.getQuantity())
-              .append(",\"name\":\"").append(displayName)
-              .append("\",\"rowCents\":").append(rowCents).append("}");
+
+            sb.append(",\"rowCents\":").append(rowCents).append("}");
             if (i < lineItems.size() - 1) sb.append(",");
         }
         sb.append("]");
         return sb.toString();
+    }
+
+    /** Removes any HTML tags WooCommerce may embed in a meta value. */
+    private static String stripHtml(String s) {
+        return s == null ? "" : s.replaceAll("<[^>]+>", "").trim();
+    }
+
+    /** Escapes a string for safe inclusion in a manually-built JSON string. */
+    private static String jsonEscape(String s) {
+        return s == null ? "" : s.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 
     /** Converts total string (e.g. "25.00") to cents. */
